@@ -137,6 +137,22 @@ for year in range(1, years + 1):
     yule_samples = generate_yule_samples(rho1, len(zeros_indices))
     df.loc[zeros_indices, f'Year_{year}'] = yule_samples
 
+    """## Remplacer les entreprises mortes par de nouvelles lignes
+    new_rows = []
+    for idx in zeros_indices:
+        # Générer une nouvelle ligne pour l'entreprise morte
+        new_row = pd.Series([0] * year + [generate_yule_samples(rho1)[0]], 
+                            index=[f'Year_{i}' for i in range(year)] + [f'Year_{year}'])
+        new_rows.append(new_row)
+
+    if new_rows:
+        # Ajouter les nouvelles lignes au DataFrame
+        new_rows_df = pd.DataFrame(new_rows)
+        df = pd.concat([df, new_rows_df], ignore_index=True)
+    
+    # Supprimer les lignes des entreprises mortes (celles avec Year_{year} == 0)
+    df = df[df[f'Year_{year}'] != 0].reset_index(drop=True)"""
+
 # Tracer une grille de 11 sous-graphes
 fig, axs = plt.subplots(4, 3, figsize=(15, 10))  # 3 lignes et 4 colonnes
 axs = axs.flatten() 
@@ -218,21 +234,60 @@ plt.show()
 
 # +
 donnes= df.drop(['Growth_1','Growth_2','Growth_3','Growth_4','Growth_5','Growth_6','Growth_7','Growth_8','Growth_9','Growth_10'], axis=1)
-seuil = 250
+
 entreprise_interet=[]
 date_franchissement= []
+data= {}
+for i in range(-9,11,1):
+    data[f'Year_{i}']=[]
 
 for index, row in donnes.iterrows() :
     for i in range(0,10): 
-        if (donnes[index][f'Year_{i}']<=250 and donnes[index][f'Year_{i+1}']>=250): 
+        if (row[f'Year_{i}']<=250 and row[f'Year_{i+1}']>=250): 
             entreprise_interet.append(index)
             date_franchissement.append(i)
+            # Remplir les données avant et après la date de franchissement
+            for j in range(-9, 11):  # Plage d'années normalisée autour de Year_0
+                # Calculer la colonne originale correspondante
+                col_idx = i + j
+                if 0 <= col_idx < 11:  # S'assurer qu'on ne dépasse pas les limites des colonnes disponibles
+                    # Ajouter la valeur de la ligne actuelle dans la bonne année du dictionnaire
+                    data[f'Year_{j}'].append(row[f'Year_{col_idx}'])
+                else:
+                    # Ajouter None pour les années où il n'y a pas de données
+                    data[f'Year_{j}'].append(None)
             break
-        elif (donnes[index][f'Year_{i}']>=250 and donnes[index][f'Year_{i+1}']<=250):
+            
+            #si on veut avoir aussi les entreprises qui passent de PME à ETI
+        """elif (row[f'Year_{i}']>=250 and row[f'Year_{i+1}']<=250):
             entreprise_interet.append(index)
             date_franchissement.append(i)
-            break
+            # Remplir les données avant et après la date de franchissement
+            for j in range(-9, 11):  # Plage d'années normalisée autour de Year_0
+                # Calculer la colonne originale correspondante
+                col_idx = i + j
+                if 0 <= col_idx < 11:  # S'assurer qu'on ne dépasse pas les limites des colonnes disponibles
+                    # Ajouter la valeur de la ligne actuelle dans la bonne année du dictionnaire
+                    data[f'Year_{j}'].append(row[f'Year_{col_idx}'])
+                else:
+                    # Ajouter None pour les années où il n'y a pas de données
+                    data[f'Year_{j}'].append(None)
+            break"""
 
+#print(len(entreprise_interet))
+#print(len(date_franchissement))
+normalisation = pd.DataFrame(data, columns=['Year_-9', 'Year_-8','Year_-7','Year_-6','Year_-5','Year_-4','Year_-3','Year_-2','Year_-1','Year_0', 'Year_1','Year_2','Year_3','Year_4','Year_5','Year_6','Year_7','Year_8','Year_9','Year_10'])
+#print(normalisation.head())
+
+# Remplir les NaN par les valeurs non NaN les plus proches
+# Remplissage vers l'avant (forward fill)
+normalisation = normalisation.fillna(method='ffill', axis=1)
+
+# Remplissage vers l'arrière (backward fill)
+normalisation = normalisation.fillna(method='bfill', axis=1)
+
+# Visualisation du DataFrame
+#print(normalisation)
 # -
 
 
@@ -240,29 +295,32 @@ for index, row in donnes.iterrows() :
 # +
 from sklearn.cluster import KMeans
 
-
-# 1. Sélectionner les colonnes pertinentes (par exemple, les colonnes de données numériques, exclure les identifiants)
-# Supposons que les colonnes numériques commencent à la 1ère colonne et que la 0e colonne soit un identifiant
-X = entreprises_conservees.values  # Remplace 1 par la première colonne de données pertinentes si besoin
+# 1. Sélectionner les colonnes pertinentes (les données numériques que vous souhaitez regrouper)
+# Supposons que 'normalisation' soit un DataFrame contenant les colonnes normalisées
+X = normalisation.iloc[:, 1:].values  # Exclure la colonne 0 si c'est un identifiant
 
 # 2. Appliquer K-means pour regrouper les lignes
-n_clusters = 10 # Par exemple, on choisit 3 clusters
+n_clusters = 10  # Choisir le nombre de clusters
 kmeans = KMeans(n_clusters=n_clusters, random_state=42)
-entreprises_conservees['Cluster'] = kmeans.fit_predict(X)
 
+# Ajouter une nouvelle colonne 'Cluster' avec les labels des clusters obtenus
+normalisation['Cluster'] = kmeans.fit_predict(X)
 
-entreprises_conservees[18:26]
+# 3. Visualiser une partie du DataFrame
+print(normalisation[18:26])
 
 
 # +
-mean_trajectories = entreprises_conservees.groupby('Cluster')[columns].mean()  # Moyenne des trajectoires par cluster
+# Sélectionner les colonnes en les passant sous forme de liste
+mean_trajectories = normalisation.groupby('Cluster')[['Year_-9', 'Year_-8','Year_-7','Year_-6','Year_-5','Year_-4','Year_-3','Year_-2','Year_-1','Year_0', 'Year_1','Year_2','Year_3','Year_4','Year_5','Year_6','Year_7','Year_8','Year_9','Year_10']].mean()  # Moyenne des trajectoires par cluster
 
 # 3. Tracer les courbes moyennes des clusters sur une même figure
-plt.figure(figsize=(10, 6))
+plt.figure(figsize=(12, 6))
 
 # Itérer sur chaque cluster pour tracer la courbe type (moyenne)
 for cluster in range(n_clusters):
-    plt.plot(columns, mean_trajectories.loc[cluster, :], marker='o', label=f'Cluster {cluster}')
+    plt.plot(['Year_-9', 'Year_-8','Year_-7','Year_-6','Year_-5','Year_-4','Year_-3','Year_-2','Year_-1','Year_0', 'Year_1','Year_2','Year_3','Year_4','Year_5','Year_6','Year_7','Year_8','Year_9','Year_10'], 
+             mean_trajectories.loc[cluster, :], marker='o', label=f'Cluster {cluster}')
 
 # Ajouter des labels et titre
 plt.xlabel('Années')
@@ -273,6 +331,7 @@ plt.grid(True)
 
 # Afficher le graphique
 plt.show()
+
 
 # +
 # Avant de faire les clusters il faut décaler les courbes
