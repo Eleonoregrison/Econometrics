@@ -75,7 +75,6 @@ df = pd.DataFrame(samples, columns=['Year_0'])
 def laplace_distribution (g,a): 
     return np.exp(-np.abs(g)/a)/(2*a)
 
-
 # # +
 a_values = [1,2,4]
 g_values = np.linspace(-10, 10, 10000)
@@ -115,10 +114,49 @@ def generate_laplace_samples(a, size=10000):
 
 # Valeur de a à tester
 a = 6 # Tu peux changer cette valeur pour tester d'autres cas
+# -
+
+
+years = 10
+for year in range(1, years + 1):
+    # Vérifie que la taille de df est correcte
+    print(f"Taille du DataFrame avant génération : {len(df)}")
+
+    # Générer la croissance pour l'année suivante
+    df[f'Growth_{year}'] = generate_laplace_samples(a, len(df))  # Assurez-vous que cela correspond
+
+    # Calculer l'année suivante
+    df[f'Year_{year}'] = (100 + df[f'Growth_{year}']) / 100 * df[f'Year_{year-1}']
+    
+    # Arrondir les valeurs à l'entier le plus proche
+    df[f'Year_{year}'] = df[f'Year_{year}'].round()
+    
+    # Remplacer les valeurs inférieures à 1 par 0
+    df.loc[df[f'Year_{year}'] < 1, f'Year_{year}'] = 0
+    
+    # Trouver les indices où un zéro est apparu pour cette année
+    zeros_indices = df[df[f'Year_{year}'] == 0].index
+    
+    # Générer des échantillons de la distribution de Yule pour ces indices
+    if len(zeros_indices) > 0:
+        yule_samples = generate_yule_samples(rho1, len(zeros_indices))
+        
+        # Créer un nouveau DataFrame pour les nouvelles lignes
+        new_rows = df.loc[zeros_indices].copy()
+        
+        # Remplacer les valeurs dans le DataFrame temporaire par les valeurs de la distribution de Yule
+        for i in range(year): 
+            new_rows[f'Year_{i}'] = 0
+        new_rows[f'Year_{year}'] = yule_samples
+        
+        # Ajouter les nouvelles lignes au DataFrame d'origine
+        df = pd.concat([df, new_rows], ignore_index=True)
+
+    print(f"Taille du DataFrame après génération : {len(df)}")
 
 
 # +
-# Répéter le processus de croissance sur 10 ans
+"""# Répéter le processus de croissance sur 10 ans
 years = 10
 for year in range(1, years + 1):
     # Générer la croissance pour l'année suivante
@@ -135,27 +173,11 @@ for year in range(1, years + 1):
     # Remplacer les zéros par des valeurs tirées de la distribution de Yule
     zeros_indices = df[df[f'Year_{year}'] == 0].index
     yule_samples = generate_yule_samples(rho1, len(zeros_indices))
-    df.loc[zeros_indices, f'Year_{year}'] = yule_samples
-
-    """## Remplacer les entreprises mortes par de nouvelles lignes
-    new_rows = []
-    for idx in zeros_indices:
-        # Générer une nouvelle ligne pour l'entreprise morte
-        new_row = pd.Series([0] * year + [generate_yule_samples(rho1)[0]], 
-                            index=[f'Year_{i}' for i in range(year)] + [f'Year_{year}'])
-        new_rows.append(new_row)
-
-    if new_rows:
-        # Ajouter les nouvelles lignes au DataFrame
-        new_rows_df = pd.DataFrame(new_rows)
-        df = pd.concat([df, new_rows_df], ignore_index=True)
-    
-    # Supprimer les lignes des entreprises mortes (celles avec Year_{year} == 0)
-    df = df[df[f'Year_{year}'] != 0].reset_index(drop=True)"""
-
+    df.loc[zeros_indices, f'Year_{year}'] = yule_samples"""
+        
 # Tracer une grille de 11 sous-graphes
-fig, axs = plt.subplots(4, 3, figsize=(15, 10))  # 3 lignes et 4 colonnes
-axs = axs.flatten() 
+fig, axs = plt.subplots(7, 3, figsize=(30, 20))  # 7 lignes et 3 colonnes
+axs = axs.flatten()
 
 # Tracer chaque année dans un sous-graphe
 for year in range(years + 1):
@@ -171,7 +193,7 @@ for year in range(years + 1):
                    fontsize=10, ha='center', bbox=dict(facecolor='white', alpha=0.5))
 
 # Supprimer les sous-graphes vides (il y a 12 sous-graphes au total)
-for j in range(years + 1, 12):
+for j in range(years + 1, 21):
     fig.delaxes(axs[j])
 
 # Ajuster l'espacement entre les sous-graphes
@@ -186,10 +208,10 @@ df
 
 # +
 # Tracer une grille de 11 sous-graphes
-fig, axs = plt.subplots(6, 2, figsize=(15, 20))  # 3 lignes et 4 colonnes
+fig, axs = plt.subplots(3, 4, figsize=(15, 20))  # 7 lignes et 3 colonnes
 axs = axs.flatten() 
 
-for year in range(1, years + 1):
+for year in range(1, years):
     axs[year].hist(df[f'Growth_{year}'], bins=50, density=True, alpha=0.6, color='g')
     axs[year].set_title(f'Échantillons générés selon la distribution de Laplace (a = {a}) de lannée {year}')
     axs[year].set_xlabel('taux de croissance')
@@ -211,19 +233,27 @@ plt.show()
 
 
 # +
-columns = ['Year_0', 'Year_1','Year_2','Year_3','Year_4','Year_5','Year_6','Year_7','Year_8','Year_9','Year_10']
-df_top10 = df.head(10)[columns]
+columns =[]
+growths =[]
+for year in range(years):
+    columns.append(f'Year_{year}')
+    if year!=0:
+        growths.append(f'Growth_{year}')
+print(columns)
+print(growths)
+
+df_fin10 = df.tail(10)[columns]
 
 # Définir les années
-years = df.columns[1:]  # Ignorer la colonne 'Entreprise'
+#years = df.columns[1:]  # Ignorer la colonne 'Entreprise'
 
 # Tracer les effectifs des 10 premières entreprises
 plt.figure(figsize=(12, 6))
 
-for index, row in df_top10.iterrows():
+for index, row in df_fin10.iterrows():
     plt.plot(columns, row, marker='o')
 
-plt.title('Effectifs des 10 Premières Entreprises par Année')
+plt.title('Effectifs des 10 dernières Entreprises par Année')
 plt.xlabel('Année')
 plt.ylabel('Effectif')
 plt.xticks(rotation=45)  # Rotation des labels d'axes x pour une meilleure lisibilité
@@ -258,7 +288,7 @@ for index, row in donnes.iterrows() :
                     data[f'Year_{j}'].append(None)
             break
             
-            #si on veut avoir aussi les entreprises qui passent de PME à ETI
+            #si on veut avoir aussi les entreprises qui passent de ETI à PME
         """elif (row[f'Year_{i}']>=250 and row[f'Year_{i+1}']<=250):
             entreprise_interet.append(index)
             date_franchissement.append(i)
@@ -285,13 +315,6 @@ normalisation = normalisation.fillna(method='ffill', axis=1)
 
 # Remplissage vers l'arrière (backward fill)
 normalisation = normalisation.fillna(method='bfill', axis=1)
-
-# Visualisation du DataFrame
-#print(normalisation)
-# -
-
-
-
 # +
 from sklearn.cluster import KMeans
 
@@ -334,7 +357,42 @@ plt.show()
 
 
 # +
-# Avant de faire les clusters il faut décaler les courbes
+"""en faisant tourner le programme plusieurs fois on s'est rendu compte que parfois 
+il n'y avait qu'une entreprise par cluster donc pour etre sur on affiche que les cluster signifiacatif"""
+
+for cluster in range(n_clusters):
+    print(f"""Le nombre d'entreprises appartenant au cluster {cluster} = {len(normalisation[normalisation['Cluster'] == cluster])}""")
+
+
+# Compter le nombre d'entreprises par cluster
+cluster_counts = normalisation['Cluster'].value_counts()
+
+# Liste des années
+years = ['-9', '-8','-7','-6','-5','-4','-3','-2','-1','0', 
+         '1','2','3','4','5','6','7','8','9','10']
+
+plt.figure(figsize=(12, 6))
+
+# Itérer sur chaque cluster
+for cluster in range(n_clusters) :
+    # Vérifier s'il y a au moins 10 entreprises dans le cluster
+    if cluster_counts[cluster] >= 10:
+        # Tracer la courbe moyenne pour le cluster
+        plt.plot(years, mean_trajectories.loc[cluster, :], marker='o', label=f'Cluster {cluster}')
+
+# Ajouter des labels et titre
+plt.xlabel('Années')
+plt.ylabel('Effectifs moyens')
+plt.title('Courbes types des clusters (seulement ceux avec au moins 5 entreprises)')
+plt.legend()
+plt.grid(True)
+
+# Afficher le graphique
+
+plt.show()
+
+
 # -
+
 
 
