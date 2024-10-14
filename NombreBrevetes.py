@@ -1,4 +1,4 @@
-#Tapez le nom de l'entreprise et vous obtiendrez le nombre de brevets trouvés
+# Tapez le nom de l'entreprise et vous obtiendrez le nombre de brevets trouvés
 
 import time
 import pandas as pd
@@ -7,12 +7,12 @@ from bs4 import BeautifulSoup
 from selenium.webdriver.chrome.service import Service
 import re
 
-# +
 # GooglePatents
 # Fonction pour rechercher le nombre de brevets pour une entreprise donnée
 def chercher_nombre_de_brevets_Google(entreprise):
     # Initialiser le ChromeDriver
     SERVICE_PATH = "C:\\Users\\davil\\Downloads\\chromedriver-win64\\chromedriver-win64\\chromedriver.exe"
+    SERVICE8PATH = "C:\Program Files\Google\Chrome\Application\chrome.exe"
     service = Service(SERVICE_PATH)
     driver = webdriver.Chrome(service=service)
 

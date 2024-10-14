@@ -27,7 +27,7 @@ colonnes
 # Données de 2009 à 2031
 
 # %%
-df_CI = pd.read_csv ('cir-et-cii-organismes-et-bureaux-de-style-agrees.csv', sep = ';')
+df_CI = pd.read_csv ('CSV_CIR_CII.csv', sep = ';')
 
 # Remplacer les valeurs non valides par NaN
 df_CI['Numéro SIREN'] = pd.to_numeric(df_CI['Numéro SIREN'], errors='coerce')
