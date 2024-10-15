@@ -3,6 +3,7 @@ import urllib.parse
 import base64
 import json
 import xml.etree.ElementTree as ET
+import pandas as pd
 
 
 def ops_authentification():
@@ -65,10 +66,14 @@ consumer_secret = "Votre_Secret"  # Remplacez par votre secret API
 
 # Authentification
 token = ops_authentification()
+# -
 
+df = pd.read_csv ('etablissements_ETI_GE.csv', low_memory=False)
 # Liste des entreprises
-companies = ["ALFA LAVAL VICARB"]  # Remplacez par vos entreprises
+companies = df[df['activitePrincipaleEtablissement'].str.startswith('62')]['denominationUniteLegale'].head(20)
+companies
 
+# +
 # Dictionnaire pour stocker les brevets par entreprise
 patents_dict = {}
 
@@ -117,6 +122,9 @@ for company, patents in patents_dict.items():
     for patent in patents:
         print(f" - Famille ID: {patent['family_id']}, Pays: {patent['country']}, Numéro de Document: {patent['doc_number']}, Date de Publication: {patent['publication_date']}")
 # -
+
+patents_dict
+
 
 # On remarque plusieurs problème dans cette première tentative : 
 # - Nous avons seulement récupéré les brevets publiés en 2024 ;
