@@ -1,11 +1,17 @@
+# TÉLÉCHARGER LES BILANS PAR SIREN
+# Pour utiliser le code, il faut d'avoir le fichier etablissements_ETI_GE.csv et un dossier nommé dossier_siren dans le répertoire
+
+# Bibliothèque utilisée
 import pandas as pd
 import requests
 import json
 import os
 
+# Compte
 username = "davi-lucena.souza@etu.minesparis.psl.eu"
 password = "020173ivadJanice@1"
 
+# URL de L'API
 url = "https://registre-national-entreprises.inpi.fr/api/sso/login"
 
 # Connexion API et obtention token
@@ -17,28 +23,26 @@ def collecte_token(username, password):
         return response.json()["token"]
     else:
         raise Exception(f"Échec de l'authentification. Code d'erreur : {response.status_code}")
-
-
 try:
     token = collecte_token(username, password)
     print(f"Token obtido: {token}")
 except Exception as e:
     print(e)
 
-
-# Função para verificar se o arquivo já existe no diretório
+# Fonction pour vérifier si le fichier existe déjà dans le répertoire afin de ne pas télécharger à nouveau
 def fichier_existe(chemin_fichier):
     return os.path.exists(chemin_fichier)
 
-
 # Lecture des SIREN à interroger à partir d'une colonne d'un DataFrame
 df = pd.read_csv('etablissements_ETI_GE.csv', dtype={'colonne_siren': str}, low_memory=False)
-
 def lecture_liste_siren(dataframe, colonne_siren):
     # Garante que os valores sejam strings, remove nulos e preenche com zeros à esquerda
     liste_siren = dataframe[colonne_siren].dropna().astype(str).str.zfill(9).tolist()
     nb_siren = len(liste_siren)
     return liste_siren, nb_siren
+
+# Pour télécharger uniquement une année, indiquez l'année souhaitée dans la variable
+anne = "2023"
 
 
 # Liste les documents et lance leur téléchargement
@@ -61,17 +65,19 @@ def telecharge_documents(siren, token, dossier_siren):
                     case "bilans":
                         document_type_bilan = document["typeBilan"]
                         document_date_cloture = document["dateCloture"]
-                        if document_date_cloture and document_date_cloture.startswith("2023"):
-                            nom_fichier = f"{document_type}_{siren}_{document_date_cloture}_{document_type_bilan}_{document_date_depot}.pdf"
-
+                    
+                        if document_date_cloture and document_date_cloture.startswith(anne):
+                            nom_fichier = f"{siren}_{document_date_cloture}.pdf"
                             telecharge_document(document_type, document_id, nom_fichier, siren, token, dossier_siren)
+                            print(f"{document_date_cloture}")
                         else:
-                            print(f"Le document avec ID {document_id} n'a pas de dateCloture ou n'est pas de 2023.")
+                            print(f"{document_date_cloture}")
                     case _:
                          print(f"Type de document non géré : {document_type}")
     # ... ou Statut API = erreur
     else:
         raise Exception(f"Échec de la récupération des documents. Code d'erreur : {response.status_code}")
+    
 
 # Télécharge un document à partir de son identifiant
 def telecharge_document(document_type, document_id, nom_fichier, siren, token, dossier_siren):
@@ -110,23 +116,10 @@ def telecharge_document(document_type, document_id, nom_fichier, siren, token, d
                 message=f"Échec du téléchargement du document. Code d'erreur : {response.status_code}"
                 message_complet=message_complet + message
                 raise Exception(message)
-        journalisation_message(siren, message_complet, dossier_siren)
     except Exception as e:
         message=f"Une exception s'est produite lors du téléchargement du document : {str(e)}"
         message_complet=message_complet + message
         print(message)
-        journalisation_message(siren, message_complet, dossier_siren)
-
-# Journalisation des messages
-def journalisation_message(siren, message, dossier_siren):
-    nom_fichier_journalisation = f"Journalisation_API_INPI_{siren}.txt"
-    chemin_journalisation = os.path.join(dossier_siren, nom_fichier_journalisation)
-    
-    # Test existence du fichier de journalisation
-    fichier_existe = os.path.exists(chemin_journalisation)
-    # Ouverture fichier en mode "a" (ajout) s'il existe, sinon création et ouverture en mode "w" (écriture)
-    with open(chemin_journalisation, "a" if fichier_existe else "w", encoding="utf-8") as journal_file:
-        journal_file.write(message + "\n")
 
 # fichier_siren = "siren.txt"
 dossier_siren = "dossier_siren"
@@ -142,4 +135,3 @@ for siren in siren_list:
         telecharge_documents(siren, token, dossier_siren)
     except Exception as e:
         print(f"Erro ao processar o SIREN {siren}: {str(e)}")
-
