@@ -6,6 +6,7 @@ import pandas as pd
 import requests
 import json
 import os
+import sys
 
 # Compte
 username = "davi-lucena.souza@etu.minesparis.psl.eu"
@@ -129,9 +130,23 @@ dossier_siren = "dossier_siren"
 siren_list, nb_siren = lecture_liste_siren(df, 'siren')
 print(f"{nb_siren} SIRENs encontrados no arquivo.")
 
-# Para cada SIREN, tentar baixar os documentos
+# Définit le SIREN à partir duquel vous souhaitez commencer l'analyse
+siren_debut = "130012636"
+
+# Pour chaque SIREN, essayer de télécharger les documents à partir de siren_debut
+traitement_commence = False  # Variable de contrôle pour commencer le traitement
+
 for siren in siren_list:
+    # Vérifie si le SIREN à partir duquel vous souhaitez commencer a été trouvé
+    if not traitement_commence:
+        if siren == siren_debut:
+            traitement_commence = True  # Commence le traitement
+        else:
+            continue  # Ignore les SIRENs jusqu'à trouver le bon
+
+    # Maintenant que le SIREN a été trouvé, continue le traitement
     try:
         telecharge_documents(siren, token, dossier_siren)
+        sys.exit(1)  # Arrête immédiatement l'exécution du programme
     except Exception as e:
-        print(f"Erro ao processar o SIREN {siren}: {str(e)}")
+        print(f"Erreur lors du traitement du SIREN {siren} : {str(e)}")
