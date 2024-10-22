@@ -1,9 +1,26 @@
 import pdfplumber
 import re
 import pytesseract
+import os
 from pdf2image import convert_from_path
+import time
 # Spécifiez le chemin d'accès à Tesseract
 pytesseract.pytesseract.tesseract_cmd = '/opt/homebrew/bin/tesseract'
+
+# +
+# Chemin vers le dossier
+dossier = './dossier_siren/30194011'
+print(dossier)
+os.path.exists(dossier)
+
+# Obtenir une liste des fichiers dans le dossier, filtrer les fichiers PDF visibles
+fichiers = [f for f in os.listdir(dossier) if f.endswith('.pdf') and not f.startswith('.')]
+    
+# Ajouter le chemin complet à chaque fichier PDF
+fichiers_avec_chemin = [os.path.join(dossier, fichier) for fichier in fichiers]
+
+# Initialiser le dictionnaire pour stocker le contenu
+dict = {}
 
 
 # +
@@ -46,6 +63,15 @@ def extraire_texte_complet(pdf_file_path):
     
     return texte
 
+
+# +
+# %%time 
+
+dict ={}
+for k in range (len(fichiers)) : 
+    dict [fichiers[k]] = extraire_texte_complet(fichiers_avec_chemin[k])
+
+# -
 
 # Fonction pour extraire la valeur du crédit d'impôt recherche
 def extraire_credit_impot_recherche2(texte):
