@@ -17,7 +17,7 @@ get_CIR('/Users/eleonoregrison/Documents/2A/Econometrics/Econometrics/dossier_si
 
 
 
-# Utili
+# Utilisation de Gemini à l'aide de Google Cloud (API VERTEX IA)
 
 import os
 from google.cloud import aiplatform
