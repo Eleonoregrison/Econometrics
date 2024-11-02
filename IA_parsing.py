@@ -36,7 +36,7 @@ def generate(file_path):
         CIR = CIR.replace('\n', '')
     if CIR=='oui' : 
         return CIR
-    return(int(CIR))
+    return(float(CIR))
 
 
 generation_config = {
