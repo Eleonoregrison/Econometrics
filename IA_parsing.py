@@ -74,7 +74,7 @@ for file_name in os.listdir(dossier_siren):
         parts = file_name.split('_')
         if len(parts) < 2:
             continue  # Ignorer les fichiers mal nommés
-        siren = parts[0]
+        siren = int(parts[0])
         
         # L'année est la première partie de la seconde partie (avant le tiret)
         annee = parts[1].split('-')[0]  # On prend la partie avant le tiret
