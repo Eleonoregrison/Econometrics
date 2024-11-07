@@ -15,7 +15,7 @@ df_orbis_siren
 caminho_cir_data = "./probable_CIR_ETI_GE.csv"  # Substitua pelo caminho do arquivo correto
 df_cir_data = pd.read_csv(caminho_cir_data, low_memory=False)
 
-siren_list = df_cir_data1['siren'].astype(str).tolist() # Make a siren_list using this df_cir_data1
+siren_list = df_cir_data['siren'].astype(str).tolist() # Make a siren_list using this df_cir_data1
 
 # Criar um conjunto de SIRENs que começam com 5 e adicionar "FR" na frente
 siren_filtered = ['FR' + siren for siren in siren_list if siren.startswith(('5'))] # Filter the the ones who starts with 5
