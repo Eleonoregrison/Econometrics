@@ -1,4 +1,4 @@
-# 745,561 BREVETS POUR 9,042 SIRENs
+
 import pandas as pd
 
 caminho_saida_csv = "./resultados_patentes.csv"  # CSV is in DRIVE
