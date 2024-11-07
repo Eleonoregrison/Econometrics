@@ -1,7 +1,7 @@
 # 745,561 BREVETS POUR 9,042 SIRENs
 import pandas as pd
 
-caminho_saida_csv = "D:/AE/COURS/TR/Code&Data_TR/resultados_patentes.csv"  # CSV is in the GitHub
+caminho_saida_csv = "/resultados_patentes.csv"  # CSV is in the GitHub
 
 # Carregar o arquivo CSV em um DataFrame
 df_orbis_siren = pd.read_csv(caminho_saida_csv, delimiter=';', low_memory=False)
@@ -12,8 +12,9 @@ df_orbis_siren
 #
 # Now I filtered the base to the Sirens that I want 
 # Obter a lista de SIRENs do DataFrame cir_dataEPO
-caminho_cir_data1 = "D:/AE/COURS/TR/Code&Data_TR/cir_data1.csv"  # Substitua pelo caminho do arquivo correto
-df_cir_data1 = pd.read_csv(caminho_cir_dataEPO, low_memory=False)
+caminho_cir_data = "/probable_CIR_ETI_GE.csv"  # Substitua pelo caminho do arquivo correto
+df_cir_data = pd.read_csv(caminho_cir_data, low_memory=False)
+
 siren_list = df_cir_data1['siren'].astype(str).tolist() # Make a siren_list using this df_cir_data1
 
 # Criar um conjunto de SIRENs que começam com 5 e adicionar "FR" na frente
@@ -23,7 +24,7 @@ siren_filtered = ['FR' + siren for siren in siren_list if siren.startswith(('5')
 df_filtered = df_orbis_siren[df_orbis_siren['appl_bvdid'].isin(siren_filtered)]
 
 # Salvar o DataFrame filtrado como CSV
-caminho_saida_csv = "D:/AE/COURS/TR/Code&Data_TR/df_filtered.csv"  # Atualize com o caminho de saída desejado
+caminho_saida_csv = "/df_filtered.csv"  # Atualize com o caminho de saída desejado
 df_filtered.to_csv(caminho_saida_csv, index=False)
 df_filtered.reset_index(drop=True, inplace=True)
 
@@ -37,7 +38,7 @@ import re
 
 
 # PATENTES DO 5
-caminho_saida_csv = "D:/AE/COURS/TR/Code&Data_TR/df_filtered.csv"
+caminho_saida_csv = "/df_filtered.csv"
 df_filtered = pd.read_csv(caminho_saida_csv, low_memory=False)
 df_filtered.reset_index(drop=True, inplace=True)
 
@@ -49,7 +50,7 @@ df_filtered.reset_index(drop=True, inplace=True)
 client = epo_ops.Client(key="3jaNanovIV5o7Eqd8AWSD8nQeH78hGUM09eu4NkJVgXyXaGN", secret="mjlvVoogucXmwTWLQL6CnaoOlgcBhYkaqjX2nAoDJbYafdmUGHGgjBsXVgXBGewu")
 
 # CSV where they will be saved
-csv_file_path = "D:/AE/COURS/TR/Code&Data_TR/BREVETS_siren5.csv"
+csv_file_path = "/BREVETS_siren5.csv"
 
 
 # Verificar se o arquivo CSV existe e carregar os dados, se existir
