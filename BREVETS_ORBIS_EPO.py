@@ -39,7 +39,7 @@ import re
 
 # PATENTES DO 5
 caminho_saida_csv = "./df_filtered.csv"
-df_filtered = pd.read_csv(caminho_saida_csv, low_memory=False)
+df_filtered = pd.read_csv(caminho_saida_csv, delimiter=';', low_memory=False)
 df_filtered.reset_index(drop=True, inplace=True)
 
 
