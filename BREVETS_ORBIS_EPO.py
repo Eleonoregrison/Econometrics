@@ -2,12 +2,13 @@
 
 # ATTENTION:
 """
-1.  To use this code, it is necessary to have the Orbis database downloaded (`./resultados_patentes.csv`) 
+1.  If the code is stopped, run all the lines again
+2.  To use this code, it is necessary to have the Orbis database downloaded (`./resultados_patentes.csv`) 
     and the base with probable SIREN (`./probable_CIR_ETI_GE.csv`), both available on GitHub.
 
-2.  You should enter the first SIREN digit you want in the section marked as # FILTERING FOR THE DIGIT YOU WANT.
+3.  You should enter the first SIREN digit you want in the section marked as # FILTERING FOR THE DIGIT YOU WANT.
 
-3. You can even run it in different terminals, but you should save to different CSV files. Be careful with the 
+4. You can even run it in different terminals, but you should save to different CSV files. Be careful with the 
    size of the loop to avoid retrieving duplicate patents, and then merge the two CSVs afterward.
 
    ex:
@@ -27,6 +28,7 @@ import epo_ops
 import xml.etree.ElementTree as ET
 import os
 import re
+from requests.exceptions import ConnectionError
 
 
 # LOADING ORBIS WITH ALL PATENTS
@@ -41,6 +43,7 @@ df_cir_data.columns = df_cir_data.columns.str.strip()
 df_cir_data['siren'] = df_cir_data['siren'].astype(str).str.zfill(9)
 siren_list = df_cir_data['siren'].astype(str).tolist() 
 
+
 # FILTERING FOR THE DIGIT YOU WANT (in this examples is 7)
 siren_filtered = ['FR' + siren for siren in siren_list if siren.startswith(('7'))]
 df_filtered = df_orbis_siren[df_orbis_siren['appl_bvdid'].isin(siren_filtered)]
@@ -53,6 +56,9 @@ csv_file_path = "./BREVETS_siren7(1).csv"
 if os.path.exists(csv_file_path):
     # Loading the existing DataFrame
     df_existente = pd.read_csv(csv_file_path, delimiter=';', low_memory=False)
+    if df_existente.empty:
+        print("Warning: CSV exists but was loaded empty. Stopping execution to prevent data loss.")
+        raise ValueError("Loaded an empty DataFrame despite the file existing.")
 else:
     df_existente = pd.DataFrame(columns=["SIREN", "Famille ID", "Brevet", "Date de Dépôt", "Année de Dépôt"])
 
@@ -64,13 +70,11 @@ else:
 # client = epo_ops.Client(key="3jaNanovIV5o7Eqd8AWSD8nQeH78hGUM09eu4NkJVgXyXaGN", secret="mjlvVoogucXmwTWLQL6CnaoOlgcBhYkaqjX2nAoDJbYafdmUGHGgjBsXVgXBGewu")
 # Davi 2
 client = epo_ops.Client(key="tIQV3hg6ip0yqPy4mqAgynhzHrGsfklVAcen4yqJdAnWu6eK", secret="b2W0wFG7A2CuJX9THdiGpso0v3qkHuUgdLpI6hsYQzduopBY386AjNm8RC5BePzY")
+# Davi 3
+# client = epo_ops.Client(key="Yr4GGSlaJYxvvRByLwSwJam7hwqoR1ynShdoe5yYtpA6VsDw", secret="yEjXzOeiSOaLI4RcENWPALhYxjUr8oyUqpiqEP9OAQLiyefLXNjF0BNAoq57OX4G")
 
 
-# TAILLE DU FOR
-start = 3765
-end = 100000
-
-for index, row in df_filtered.iloc[start:end].iterrows():
+def process_patent(index, row, df_existente):
 
     # RESETTING RESULTS AT EACH ITERATION TO SAVE AT THE END
     resultados = []
@@ -85,7 +89,7 @@ for index, row in df_filtered.iloc[start:end].iterrows():
     if not existing_row.empty: # df_existente already has the row
         if existing_row['Famille ID'].values[0] is not None and pd.notna(existing_row['Famille ID'].values[0]):
             print(f"   Existe déjà dans le fichier CSV avec une Famille ID valide.")
-            continue  # Skip to the next iteration if the patent already exists and the Famille ID is valid.
+            return df_existente  # Skip to the next iteration if the patent already exists and the Famille ID is valid.
         else:
             print(f"   Existe déjà dans le fichier CSV, mais Famille ID est manquant. Tentando novamente...")
             idx = existing_row.index[0]  # Getting the index of the first matching row.
@@ -142,13 +146,13 @@ for index, row in df_filtered.iloc[start:end].iterrows():
 
             if not existing_row.empty and famille_id == 'N/A':
                 print(f"   {numero_patente} NOT found again, even with response = 200. Skip to the next iteration.")
-                continue  # Skip to the next iteration if the patent already exists and the Famille ID is missing
+                return df_existente  # Skip to the next iteration if the patent already exists and the Famille ID is missing
 
         else:
 
             if not existing_row.empty and (existing_row['Famille ID'].values[0] is None or pd.isna(existing_row['Famille ID'].values[0])):
                 print(f"{numero_patente} Not found again, response was NOT 200. Skip to the next iteration.")
-                continue  # Skip to the next iteration if the patent already exists and the Famille ID is missing.
+                return df_existente  # Skip to the next iteration if the patent already exists and the Famille ID is missing.
 
             # When the patent is not found
             print(f"   Erreur lors de la recherche du brevet {numero_patente}: {response.status_code} - {response.text}")
@@ -161,20 +165,24 @@ for index, row in df_filtered.iloc[start:end].iterrows():
             })
 
     except Exception as e:
-        print(f"   Erreur lors du traitement du brevet {numero_patente}: {e}")
-        if not existing_row.empty and (existing_row['Famille ID'].values[0] is None or pd.isna(existing_row['Famille ID'].values[0])):
-            print(f"   {numero_patente} Not found again, raised EXCEPT. Skip to the next iteration.")
-            continue  # Skip to the next iteration if the patent already exists and the Famille ID is missing
+        if "NameResolutionError" in str(e) or "Max retries exceeded" in str(e):
+            print("Network error encountered. Stopping execution due to NameResolutionError or Max retries exceeded.")
+            raise  # Stops the code immediately
+        else:
+            print(f"   Erreur lors du traitement du brevet {numero_patente}: {e}")
+            if not existing_row.empty and (existing_row['Famille ID'].values[0] is None or pd.isna(existing_row['Famille ID'].values[0])):
+                print(f"   {numero_patente} Not found again, raised EXCEPT. Skip to the next iteration.")
+                return df_existente  # Skip to the next iteration if the patent already exists and the Famille ID is missing
 
-        # Add the available information, with blank fields.
-        resultados.append({
-            "SIREN": siren,
-            "Famille ID": None,
-            "Brevet": numero_patente,
-            "Date de Dépôt": None,
-            "Année de Dépôt": None
-        })
-
+            # Add the available information, with blank fields.
+            resultados.append({
+                "SIREN": siren,
+                "Famille ID": None,
+                "Brevet": numero_patente,
+                "Date de Dépôt": None,
+                "Année de Dépôt": None
+            })
+    
 
     # Converting the found results into a DataFrame
     df_resultados = pd.DataFrame(columns=["SIREN", "Famille ID", "Brevet", "Date de Dépôt", "Année de Dépôt"])
@@ -208,6 +216,17 @@ for index, row in df_filtered.iloc[start:end].iterrows():
 
     # Add the new results to the existing DataFrame
     df_existente = pd.concat([df_existente, df_resultados], ignore_index=True)
+
+    return df_existente
+
+
+# TAILLE DU FOR
+start = 0
+end = 50000
+# Loop to process each row
+for index, row in df_filtered.iloc[start:end].iterrows():
+    
+    df_existente = process_patent(index, row, df_existente)  # Update df_existente after each row is processed
 
     # Save the updated DataFrame to a CSV file
     df_existente.to_csv(csv_file_path, index=False, sep=';')
