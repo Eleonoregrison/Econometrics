@@ -27,7 +27,6 @@ import epo_ops
 import xml.etree.ElementTree as ET
 import os
 import re
-from requests.exceptions import ConnectionError
 
 
 # LOADING ORBIS WITH ALL PATENTS
