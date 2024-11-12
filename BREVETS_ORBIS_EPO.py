@@ -56,9 +56,6 @@ csv_file_path = "./BREVETS_siren7(1).csv"
 if os.path.exists(csv_file_path):
     # Loading the existing DataFrame
     df_existente = pd.read_csv(csv_file_path, delimiter=';', low_memory=False)
-    if df_existente.empty:
-        print("Warning: CSV exists but was loaded empty. Stopping execution to prevent data loss.")
-        raise ValueError("Loaded an empty DataFrame despite the file existing.")
 else:
     df_existente = pd.DataFrame(columns=["SIREN", "Famille ID", "Brevet", "Date de Dépôt", "Année de Dépôt"])
 
