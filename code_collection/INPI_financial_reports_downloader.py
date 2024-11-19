@@ -34,8 +34,12 @@ password = "020173ivadJanice@1"
 
 
 # Main logic
-output_folder = "FinReports_siren"
 siren_folder = 'probable_CIR_ETI_GE.csv'
+output_folder = "FinReports_siren"
+if not os.path.exists(output_folder):
+    os.makedirs(output_folder)  # Cria a pasta se não existir
+    print(f"Folder '{output_folder}' was created.")
+
 
 
 # API URL
@@ -146,20 +150,22 @@ processing_started = False
 
 i = 1
 for siren in siren_list:
-    d += 1
+    i += 1
 
-    print(d)
+    print(i)
     print(siren)
     print()
-    if not siren.startswith('1'):
-        continue
+
+    # To download reports for SIRENs starting with a specific number
+    '''if not siren.startswith('1'):
+        continue'''
 
     # Start processing from a specific SIREN
-    # if not processing_started:
+    '''if not processing_started:
         if siren == start_siren:
             processing_started = True
         else:
-            continue     
+            continue'''     
 
     try:
         download_documents(siren, token, output_folder)
