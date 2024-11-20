@@ -3,7 +3,7 @@
 # ATTENTION:
 """
 1.  If the code is stopped, run all the lines again
-2.  To use this code, it is necessary to have the Orbis database downloaded (`./resultados_patentes.csv`) 
+2.  To use this code, it is necessary to have the Orbis database downloaded (`./patentes.csv`) 
     and the base with probable SIREN (`./probable_CIR_ETI_GE.csv`), both available on GitHub.
 
 3.  You should enter the first SIREN digit you want in the section marked as # FILTERING FOR THE DIGIT YOU WANT.
